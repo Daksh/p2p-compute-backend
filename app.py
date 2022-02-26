@@ -10,6 +10,13 @@ socket_ = SocketIO(app, async_mode=async_mode)
 def index():
     return render_template('index.html', async_mode=socket_.async_mode)
 
+@socket_.on('my_response2')
+def log(mess):
+    print("LOGS: ",mess)
+
+@socket_.on('my_response2', namespace='/test')
+def log(mess):
+    print("LOGStest: ",mess)
 
 @socket_.on('my_event', namespace='/test')
 def test_message(message):
@@ -22,6 +29,9 @@ def test_message(message):
 def test_broadcast_message(message):
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
+         {'data': message['data'], 'count': session['receive_count']},
+         broadcast=True)
+    emit('my_response2',
          {'data': message['data'], 'count': session['receive_count']},
          broadcast=True)
 

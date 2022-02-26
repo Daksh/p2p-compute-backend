@@ -18,6 +18,7 @@
                 $('#log').append('<br>' + $('<div/>').text('logs #' + msg.count + ': ' + msg.data).html());
                 if (cb)
                     cb();
+                socket.emit('my_response2',{data:'random'})
             });
             $('form#emit').submit(function(event) {
                 socket.emit('my_event', {data: $('#emit_data').val()});
