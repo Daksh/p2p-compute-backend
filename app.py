@@ -30,6 +30,8 @@ def receive_file(file):
     choose_from = list(available_compute_sockets)
     if request.sid in choose_from:
         choose_from.remove(request.sid)
+    if choose_from == []:
+        emit('error', room=request.sid)
     chosen_socket = random.choice(choose_from)
     print(f'The chosen one: {chosen_socket}')
     print(f'My socket: {request.sid}')
