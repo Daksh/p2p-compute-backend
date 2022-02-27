@@ -27,14 +27,16 @@ def receive_file(file):
         choose_from.remove(request.sid)
     chosen_socket = random.choice(choose_from)
     print(f'The chosen one: {chosen_socket}')
+    print(f'My socket: {request.sid}')
+    # print(f'My request.namespace: {request.namespace}')
     tasks_mapping[chosen_socket] = request.sid
-    emit('send_file_to_local', file, to=chosen_socket)
+    emit('send_file_to_local', file, room=chosen_socket)
 
 @socket_.on('send_result_to_global')
 def receive_result(result):
     local = tasks_mapping[request.sid]
     del tasks_mapping[request.sid]
-    emit('send_result_to_local', result, to=local)
+    emit('send_result_to_local', result, room=local)
 
 @socket_.on('unregister_compute')
 def unregsiter_compute():
