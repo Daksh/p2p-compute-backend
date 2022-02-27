@@ -7,18 +7,22 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socket_ = SocketIO(app, async_mode=async_mode)
 available_compute_sockets = set()
+running_compute_sockets = set()
 tasks_mapping = {}
 
 @app.route('/')
 def index():
     return render_template('index.html', async_mode=socket_.async_mode)
 
+def update_available_machines():
+    emit('update_available_machines', {'available': list(available_compute_sockets), 'running': list(running_compute_sockets)}, broadcast=True)
+
 @socket_.on('register_compute')
 def register_compute():
     available_compute_sockets.add(request.sid)
     print(f"{request.sid} registered")
     print(f"[after append] available_compute_sockets: {available_compute_sockets}")
-    emit('update_available_machines', list(available_compute_sockets), broadcast=True)
+    update_available_machines()
     
 # Global host server (this guy) receives a file from local server
 @socket_.on('send_file_to_global')
@@ -29,12 +33,18 @@ def receive_file(file):
     chosen_socket = random.choice(choose_from)
     print(f'The chosen one: {chosen_socket}')
     print(f'My socket: {request.sid}')
-    # print(f'My request.namespace: {request.namespace}')
     tasks_mapping[chosen_socket] = request.sid
+    running_compute_sockets.add(chosen_socket)
+    available_compute_sockets.remove(chosen_socket)
+    update_available_machines()
     emit('send_file_to_local', file, room=chosen_socket)
 
 @socket_.on('send_result_to_global')
 def receive_result(result):
+    assert request.sid in running_compute_sockets
+    running_compute_sockets.remove(request.sid)
+    available_compute_sockets.add(request.sid)
+    update_available_machines()
     local = tasks_mapping[request.sid]
     del tasks_mapping[request.sid]
     emit('send_result_to_local', result, room=local)
@@ -45,7 +55,7 @@ def unregsiter_compute():
         available_compute_sockets.remove(request.sid)
     print(f"{request.sid} unregistered")
     print(f"[after remove] available_compute_sockets: {available_compute_sockets}")
-    emit('update_available_machines', list(available_compute_sockets), broadcast=True)
+    update_available_machines()
 
 @socket_.on('disconnect')
 def disconnect():
@@ -53,7 +63,7 @@ def disconnect():
         available_compute_sockets.remove(request.sid)
     print(f"{request.sid} disconnected, so I will unregister")
     print(f"[after remove] available_compute_sockets: {available_compute_sockets}")
-    emit('update_available_machines', list(available_compute_sockets), broadcast=True)
+    update_available_machines()
 
 
 if __name__ == '__main__':
