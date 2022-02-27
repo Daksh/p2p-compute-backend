@@ -13,9 +13,13 @@ tasks_mapping = {}
 @app.route('/')
 def index():
     return render_template('index.html', async_mode=socket_.async_mode)
-
+    
 def update_available_machines():
     emit('update_available_machines', {'available': list(available_compute_sockets), 'running': list(running_compute_sockets)}, broadcast=True)
+
+@socket_.on('fetch_machines')
+def send_machines():
+    update_available_machines()
 
 @socket_.on('register_compute')
 def register_compute():
