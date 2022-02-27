@@ -47,7 +47,6 @@ def receive_file(file):
 
 @socket_.on('send_result_to_global')
 def receive_result(result):
-    assert request.sid in running_compute_sockets
     running_compute_sockets.remove(request.sid)
     available_compute_sockets.add(request.sid)
     update_available_machines()
