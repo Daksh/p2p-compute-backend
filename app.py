@@ -6,7 +6,8 @@ async_mode = None
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socket_ = SocketIO(app, async_mode=async_mode)
-available_compute_sockets = []
+available_compute_sockets = set()
+tasks_mapping = {}
 
 @app.route('/')
 def index():
@@ -14,15 +15,26 @@ def index():
 
 @socket_.on('register_compute')
 def register_compute():
-    available_compute_sockets.append(request.sid)
+    available_compute_sockets.add(request.sid)
     print(f"{request.sid} registered")
     print(f"[after append] available_compute_sockets: {available_compute_sockets}")
     
 # Global host server (this guy) receives a file from local server
 @socket_.on('send_file_to_global')
 def receive_file(file):
-    chosen_socket = random.choice(available_compute_sockets)
+    choose_from = list(available_compute_sockets)
+    if request.sid in choose_from:
+        choose_from.remove(request.sid)
+    chosen_socket = random.choice(choose_from)
+    print(f'The chosen one: {chosen_socket}')
+    tasks_mapping[chosen_socket] = request.sid
     emit('send_file_to_local', file, to=chosen_socket)
+
+@socket_.on('send_result_to_global')
+def receive_result(result):
+    local = tasks_mapping[request.sid]
+    del tasks_mapping[request.sid]
+    emit('send_result_to_local', result, to=local)
 
 @socket_.on('unregister_compute')
 def unregsiter_compute():
