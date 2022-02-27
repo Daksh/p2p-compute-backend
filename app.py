@@ -18,6 +18,7 @@ def register_compute():
     available_compute_sockets.add(request.sid)
     print(f"{request.sid} registered")
     print(f"[after append] available_compute_sockets: {available_compute_sockets}")
+    emit('update_available_machines', list(available_compute_sockets), broadcast=True)
     
 # Global host server (this guy) receives a file from local server
 @socket_.on('send_file_to_global')
@@ -44,6 +45,7 @@ def unregsiter_compute():
         available_compute_sockets.remove(request.sid)
     print(f"{request.sid} unregistered")
     print(f"[after remove] available_compute_sockets: {available_compute_sockets}")
+    emit('update_available_machines', list(available_compute_sockets), broadcast=True)
 
 @socket_.on('disconnect')
 def disconnect():
@@ -51,6 +53,7 @@ def disconnect():
         available_compute_sockets.remove(request.sid)
     print(f"{request.sid} disconnected, so I will unregister")
     print(f"[after remove] available_compute_sockets: {available_compute_sockets}")
+    emit('update_available_machines', list(available_compute_sockets), broadcast=True)
 
 
 if __name__ == '__main__':
